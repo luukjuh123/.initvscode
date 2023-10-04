@@ -1,0 +1,32 @@
+name: Fetch VSCode Server, Extract Commit Version, and Commit
+
+on: 
+  push:
+    branches:
+      - main
+
+jobs:
+  download:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Download VSCode Server and Save Logs
+      run: |
+        wget -O vscode-server-linux-x64.tar.gz https://update.code.visualstudio.com/latest/server-linux-x64/stable 2>&1 | tee wget_logs.txt
+
+    - name: Extract Commit Version and Save to version.txt
+      run: |
+        COMMIT_HASH=$(grep -oP 'https://az764295.vo.msecnd.net/stable/\K[a-f0-9]{40}' wget_logs.txt)
+        echo $COMMIT_HASH > version.txt
+        echo "Extracted Commit Version: $COMMIT_HASH"
+
+    - name: Commit and Push version.txt and .tar.gz
+      run: |
+        git config --global user.name "GitHub Actions Bot"
+        git config --global user.email "github-actions@github.com"
+        git add version.txt vscode-server-linux-x64.tar.gz
+        git commit -m "Update version.txt with latest commit hash and add .tar.gz file"
+        git push
