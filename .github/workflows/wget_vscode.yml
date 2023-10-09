@@ -16,6 +16,10 @@ jobs:
     - name: Download VSCode Server and Save Logs
       run: |
         wget -O vscode-server-linux-x64.tar.gz https://update.code.visualstudio.com/latest/server-linux-x64/stable 2>&1 | tee wget_logs.txt
+        if [ $? -ne 0 ]; then
+            echo "Error downloading VSCode Server"
+            exit 1
+        fi
 
     - name: Extract Commit Version and Save to version.txt
       run: |
@@ -27,6 +31,11 @@ jobs:
       run: |
         git config --global user.name "GitHub Actions Bot"
         git config --global user.email "github-actions@github.com"
+        
+        # Check for changes
+        git diff --exit-code && exit 0
+
+        # Commit and push if there are changes
         git add version.txt vscode-server-linux-x64.tar.gz
         git commit -m "Update version.txt with latest commit hash and add .tar.gz file"
         git push
