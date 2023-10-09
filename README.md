@@ -6,7 +6,7 @@
 ```bash
 cd .initvscode
 chmod +x run.sh
-sudo sh run.sh
+sudo bash run.sh
 ```
 
 3. test connection with vscode
