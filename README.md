@@ -4,6 +4,8 @@
 2. run:
 
 ```bash
+cd .initvscode
+chmod +x run.sh
 sudo sh run.sh
 ```
 
