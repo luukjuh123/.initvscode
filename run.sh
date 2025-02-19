@@ -10,6 +10,11 @@ if [[ $EUID -ne 0 ]]; then
    exit 1
 fi
 
+# Define the non-root user running VSCode
+VSCODE_USER="${SUDO_USER:-$(whoami)}"
+VSCODE_HOME=$(eval echo "~$VSCODE_USER")  # Gets the correct home directory for the user
+VSCODE_SERVER_PATH="$VSCODE_HOME/.vscode-server"
+
 # Read the commit version from version.txt
 if [[ ! -f version.txt ]]; then
     echo "Error: version.txt not found!"
@@ -20,7 +25,7 @@ COMMIT_VERSION=$(cat version.txt | tr -d '[:space:]')  # Remove spaces/newlines
 echo "Using commit version: $COMMIT_VERSION"
 
 # Define the VSCode server directory
-VSCODE_SERVER_DIR="$HOME/.vscode-server/bin/$COMMIT_VERSION"
+VSCODE_SERVER_DIR="$VSCODE_SERVER_PATH/bin/$COMMIT_VERSION"
 
 # Ensure the VSCode server tarball exists
 if [[ ! -f vscode-server-linux-x64.tar.gz ]]; then
@@ -34,8 +39,9 @@ if [[ -d "$VSCODE_SERVER_DIR" ]]; then
     rm -rf "$VSCODE_SERVER_DIR"
 fi
 
-# Create the directory structure
+# Create the directory structure with correct user ownership
 mkdir -p "$VSCODE_SERVER_DIR"
+chown -R "$VSCODE_USER":"$VSCODE_USER" "$VSCODE_SERVER_PATH"
 
 # Extract VSCode Server
 echo "Extracting VSCode server to $VSCODE_SERVER_DIR..."
@@ -58,25 +64,26 @@ fi
 chmod +x "$SERVER_SCRIPT"
 
 # Double-check that the correct commit version exists in the expected location
-if [[ ! -d "$HOME/.vscode-server/bin/$COMMIT_VERSION" ]]; then
+if [[ ! -d "$VSCODE_SERVER_PATH/bin/$COMMIT_VERSION" ]]; then
     echo "Error: VSCode Server is NOT in the expected location!"
     exit 1
 else
-    echo "VSCode Server successfully installed at: $HOME/.vscode-server/bin/$COMMIT_VERSION"
+    echo "VSCode Server successfully installed at: $VSCODE_SERVER_PATH/bin/$COMMIT_VERSION"
 fi
 
 # Ensure correct permissions for execution
 chmod -R 755 "$VSCODE_SERVER_DIR"
-chmod -R 755 "$HOME/.vscode-server"
+chmod -R 755 "$VSCODE_SERVER_PATH"
+chown -R "$VSCODE_USER":"$VSCODE_USER" "$VSCODE_SERVER_PATH"
 
 # Set environment variables to prevent VSCode from re-downloading the server
 echo "Configuring environment variables..."
 export VSCODE_UPDATE_MODE=none
-export VSCODE_SERVER_DIR="$HOME/.vscode-server"
+export VSCODE_SERVER_DIR="$VSCODE_SERVER_PATH"
 
 # Final verification: Manually list installed versions
 echo "Verifying installed VSCode server versions..."
-ls -l $HOME/.vscode-server/bin/
+ls -l "$VSCODE_SERVER_PATH/bin/"
 
 # Display success message
 echo "✅ VSCode Server setup completed successfully! Ready to connect."
