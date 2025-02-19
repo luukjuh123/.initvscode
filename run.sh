@@ -53,14 +53,21 @@ if [[ $? -ne 0 ]]; then
     exit 1
 fi
 
-# Verify that the required server file exists
-SERVER_SCRIPT="$VSCODE_SERVER_DIR/server.sh"
-if [[ ! -f "$SERVER_SCRIPT" ]]; then
-    echo "Error: VSCode server installation seems incorrect. Missing server.sh in $VSCODE_SERVER_DIR"
+# Detect the correct startup script
+if [[ -f "$VSCODE_SERVER_DIR/bin/code-server" ]]; then
+    SERVER_SCRIPT="$VSCODE_SERVER_DIR/bin/code-server"
+elif [[ -f "$VSCODE_SERVER_DIR/bin/remote-cli/code" ]]; then
+    SERVER_SCRIPT="$VSCODE_SERVER_DIR/bin/remote-cli/code"
+else
+    echo "Error: No recognizable startup script found in $VSCODE_SERVER_DIR"
+    echo "Contents of extracted directory:"
+    ls -l "$VSCODE_SERVER_DIR/bin/"
     exit 1
 fi
 
-# Ensure the server script is executable
+echo "Found server script: $SERVER_SCRIPT"
+
+# Ensure the found script is executable
 chmod +x "$SERVER_SCRIPT"
 
 # Double-check that the correct commit version exists in the expected location
