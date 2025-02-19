@@ -43,42 +43,30 @@ fi
 mkdir -p "$VSCODE_SERVER_DIR"
 chown -R "$VSCODE_USER":"$VSCODE_USER" "$VSCODE_SERVER_PATH"
 
-# Extract VSCode Server
-echo "Extracting VSCode server to $VSCODE_SERVER_DIR..."
-tar -xzf vscode-server-linux-x64.tar.gz -C "$VSCODE_SERVER_DIR"
+# Extract VSCode Server to a temporary location
+echo "Extracting VSCode server..."
+TMP_DIR=$(mktemp -d)
+tar -xzf vscode-server-linux-x64.tar.gz -C "$TMP_DIR"
 
-# Verify extraction was successful
-if [[ $? -ne 0 ]]; then
-    echo "Error: Extraction failed!"
+# Ensure the extracted directory exists
+EXTRACTED_DIR="$TMP_DIR/vscode-server-linux-x64"
+if [[ ! -d "$EXTRACTED_DIR" ]]; then
+    echo "Error: Extraction failed or wrong structure!"
+    ls -l "$TMP_DIR"
     exit 1
 fi
 
-# Detect the correct startup script
-if [[ -f "$VSCODE_SERVER_DIR/bin/code-server" ]]; then
-    SERVER_SCRIPT="$VSCODE_SERVER_DIR/bin/code-server"
-elif [[ -f "$VSCODE_SERVER_DIR/bin/remote-cli/code" ]]; then
-    SERVER_SCRIPT="$VSCODE_SERVER_DIR/bin/remote-cli/code"
-else
-    echo "Error: No recognizable startup script found in $VSCODE_SERVER_DIR"
-    echo "Contents of extracted directory:"
-    ls -l "$VSCODE_SERVER_DIR/bin/"
+# Move extracted files to the correct location
+mv "$EXTRACTED_DIR"/* "$VSCODE_SERVER_DIR"
+
+# Verify files moved correctly
+if [[ ! -f "$VSCODE_SERVER_DIR/bin/code-server" && ! -f "$VSCODE_SERVER_DIR/node" ]]; then
+    echo "Error: VSCode server was not installed correctly!"
+    ls -l "$VSCODE_SERVER_DIR"
     exit 1
 fi
 
-echo "Found server script: $SERVER_SCRIPT"
-
-# Ensure the found script is executable
-chmod +x "$SERVER_SCRIPT"
-
-# Double-check that the correct commit version exists in the expected location
-if [[ ! -d "$VSCODE_SERVER_PATH/bin/$COMMIT_VERSION" ]]; then
-    echo "Error: VSCode Server is NOT in the expected location!"
-    exit 1
-else
-    echo "VSCode Server successfully installed at: $VSCODE_SERVER_PATH/bin/$COMMIT_VERSION"
-fi
-
-# Ensure correct permissions for execution
+# Ensure correct permissions
 chmod -R 755 "$VSCODE_SERVER_DIR"
 chmod -R 755 "$VSCODE_SERVER_PATH"
 chown -R "$VSCODE_USER":"$VSCODE_USER" "$VSCODE_SERVER_PATH"
