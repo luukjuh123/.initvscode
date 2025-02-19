@@ -16,13 +16,19 @@ if [[ ! -f version.txt ]]; then
     exit 1
 fi
 
-COMMIT_VERSION=$(cat version.txt | tr -d '[:space:]')  # Remove any unwanted spaces or newlines
+COMMIT_VERSION=$(cat version.txt | tr -d '[:space:]')  # Remove spaces/newlines
 echo "Using commit version: $COMMIT_VERSION"
 
 # Define the VSCode server directory
 VSCODE_SERVER_DIR="$HOME/.vscode-server/bin/$COMMIT_VERSION"
 
-# Ensure previous installation is removed if it exists (optional, but ensures clean install)
+# Ensure the VSCode server tarball exists
+if [[ ! -f vscode-server-linux-x64.tar.gz ]]; then
+    echo "Error: vscode-server-linux-x64.tar.gz not found!"
+    exit 1
+fi
+
+# Ensure a clean installation by removing any existing version
 if [[ -d "$VSCODE_SERVER_DIR" ]]; then
     echo "Removing existing VSCode server for commit $COMMIT_VERSION..."
     rm -rf "$VSCODE_SERVER_DIR"
@@ -31,14 +37,8 @@ fi
 # Create the directory structure
 mkdir -p "$VSCODE_SERVER_DIR"
 
-# Verify the archive file exists
-if [[ ! -f vscode-server-linux-x64.tar.gz ]]; then
-    echo "Error: vscode-server-linux-x64.tar.gz not found!"
-    exit 1
-fi
-
 # Extract VSCode Server
-echo "Extracting VSCode server..."
+echo "Extracting VSCode server to $VSCODE_SERVER_DIR..."
 tar -xzf vscode-server-linux-x64.tar.gz -C "$VSCODE_SERVER_DIR"
 
 # Verify extraction was successful
@@ -47,14 +47,36 @@ if [[ $? -ne 0 ]]; then
     exit 1
 fi
 
-# Ensure correct permissions
+# Verify that the required server file exists
+SERVER_SCRIPT="$VSCODE_SERVER_DIR/server.sh"
+if [[ ! -f "$SERVER_SCRIPT" ]]; then
+    echo "Error: VSCode server installation seems incorrect. Missing server.sh in $VSCODE_SERVER_DIR"
+    exit 1
+fi
+
+# Ensure the server script is executable
+chmod +x "$SERVER_SCRIPT"
+
+# Double-check that the correct commit version exists in the expected location
+if [[ ! -d "$HOME/.vscode-server/bin/$COMMIT_VERSION" ]]; then
+    echo "Error: VSCode Server is NOT in the expected location!"
+    exit 1
+else
+    echo "VSCode Server successfully installed at: $HOME/.vscode-server/bin/$COMMIT_VERSION"
+fi
+
+# Ensure correct permissions for execution
 chmod -R 755 "$VSCODE_SERVER_DIR"
 chmod -R 755 "$HOME/.vscode-server"
 
-# Set environment variables to prevent re-downloading
+# Set environment variables to prevent VSCode from re-downloading the server
 echo "Configuring environment variables..."
 export VSCODE_UPDATE_MODE=none
 export VSCODE_SERVER_DIR="$HOME/.vscode-server"
 
+# Final verification: Manually list installed versions
+echo "Verifying installed VSCode server versions..."
+ls -l $HOME/.vscode-server/bin/
+
 # Display success message
-echo "VSCode Server setup completed successfully!"
+echo "✅ VSCode Server setup completed successfully! Ready to connect."
