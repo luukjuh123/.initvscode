@@ -27,7 +27,15 @@ jobs:
 
     - name: Extract Commit Version and Save to version.txt
       run: |
+<<<<<<< HEAD
         COMMIT_HASH=$(grep -oP 'https://az764295.vo.msecnd.net/stable/\K[a-f0-9]{40}' wget_logs.txt | head -n 1)
+=======
+        COMMIT_HASH=$(grep -oP 'https://vscode.download.prss.microsoft.com/dbazure/download/stable/\K[a-f0-9]{40}' wget_logs.txt | head -n 1)
+        if [ -z "$COMMIT_HASH" ]; then
+          echo "Error: Commit hash not found."
+          exit 1
+        fi
+>>>>>>> 4f53ab4 (update vscode setup)
         echo $COMMIT_HASH > version.txt
         echo "Extracted Commit Version: $COMMIT_HASH"
 
