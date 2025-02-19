@@ -17,6 +17,7 @@ if [[ ! -f version.txt ]]; then
 fi
 
 COMMIT_VERSION=$(cat version.txt)
+#COMMIT_VERSION='e54c774e0add60467559eb0d1e229c6452cf8447'
 echo "Using commit version: $COMMIT_VERSION"
 
 mkdir -p ~/.vscode-server/bin/$COMMIT_VERSION
