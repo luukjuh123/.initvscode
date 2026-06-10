@@ -1,11 +1,14 @@
-name: Fetch VSCode Server, Extract Commit Version, and Commit
+name: Fetch VSCode Server, Extract Commit Version, and Publish
 
-on: 
+on:
   push:
     branches:
       - main
   schedule:
     - cron: '0 0 * * *'
+
+permissions:
+  contents: write
 
 jobs:
   download:
@@ -13,13 +16,13 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v2
-      with:
-        node-version: '16'
+      uses: actions/checkout@v4
 
     - name: Download VSCode Server and Save Logs
       run: |
-        wget -O vscode-server-linux-x64.tar.gz https://update.code.visualstudio.com/latest/server-linux-x64/stable 2>&1 | tee wget_logs.txt
+        set -o pipefail
+        wget -O vscode-server-linux-x64.tar.gz \
+          https://update.code.visualstudio.com/latest/server-linux-x64/stable 2>&1 | tee wget_logs.txt
         if [ $? -ne 0 ]; then
             echo "Error downloading VSCode Server"
             exit 1
@@ -35,15 +38,28 @@ jobs:
         echo $COMMIT_HASH > version.txt
         echo "Extracted Commit Version: $COMMIT_HASH"
 
-    - name: Commit and Push version.txt and .tar.gz
+    - name: Commit and Push version.txt
       run: |
         git config --global user.name "GitHub Actions Bot"
         git config --global user.email "github-actions@github.com"
-        
-        # Check for changes
-        git diff --exit-code && exit 0
 
-        # Commit and push if there are changes
-        git add version.txt vscode-server-linux-x64.tar.gz
-        git commit -m "Update version.txt with latest commit hash and add .tar.gz file"
+        # Nothing to do if version.txt is unchanged
+        git diff --exit-code version.txt && echo "version.txt unchanged" && exit 0
+
+        git add version.txt
+        git commit -m "Update version.txt with latest commit hash"
         git push
+
+    - name: Publish tarball to the 'latest' release
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        COMMIT_HASH=$(cat version.txt | tr -d '[:space:]')
+        # Create the release if it does not exist yet (ignore error if it already does)
+        gh release create latest \
+          --title "Latest VSCode Server" \
+          --notes "VSCode server commit: ${COMMIT_HASH}" \
+          2>/dev/null || true
+        # Replace the asset and refresh the release notes with the current commit
+        gh release upload latest vscode-server-linux-x64.tar.gz --clobber
+        gh release edit latest --notes "VSCode server commit: ${COMMIT_HASH}"

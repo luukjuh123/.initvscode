@@ -14,3 +14,9 @@ sudo bash run.sh
 ```
 
 3. test connection with vscode
+
+> The `vscode-server-linux-x64.tar.gz` is no longer committed to the repo (it
+> exceeds GitHub's 100 MB file limit). A daily GitHub Action publishes it as the
+> asset of the `latest` release, and `run.sh` downloads it automatically if it
+> isn't already present. The VM therefore needs to reach
+> `github.com`/release downloads, but still not VSCode's own update CDN.

@@ -27,10 +27,23 @@ echo "Using commit version: $COMMIT_VERSION"
 # Define the VSCode server directory
 VSCODE_SERVER_DIR="$VSCODE_SERVER_PATH/bin/$COMMIT_VERSION"
 
-# Ensure the VSCode server tarball exists
-if [[ ! -f vscode-server-linux-x64.tar.gz ]]; then
-    echo "Error: vscode-server-linux-x64.tar.gz not found!"
-    exit 1
+# The tarball is published as a GitHub release asset (too large to commit to git).
+# Download it if it is not already present next to this script.
+TARBALL="vscode-server-linux-x64.tar.gz"
+TARBALL_URL="https://github.com/luukjuh123/.initvscode/releases/download/latest/$TARBALL"
+
+if [[ ! -f "$TARBALL" ]]; then
+    echo "Tarball not found locally, downloading from GitHub release..."
+    if command -v wget >/dev/null 2>&1; then
+        wget -O "$TARBALL" "$TARBALL_URL"
+    else
+        curl -fL -o "$TARBALL" "$TARBALL_URL"
+    fi
+    if [[ $? -ne 0 || ! -s "$TARBALL" ]]; then
+        echo "Error: failed to download $TARBALL from $TARBALL_URL"
+        rm -f "$TARBALL"
+        exit 1
+    fi
 fi
 
 # Ensure a clean installation by removing any existing version
